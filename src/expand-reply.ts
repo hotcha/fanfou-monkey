@@ -1,25 +1,35 @@
 // 例子: https://fanfou.com/statuses/wXkY9O03MZA
-
-const PREFIX = 'ff-'
+// https://fanfou.com/statuses/v4SCgZO8QyI
+// https://fanfou.com/%E7%88%B1%E8%87%AA
 
 function expand(root: Element, isStatusPage = false) {
   if (root.nodeName === 'BODY') {
     if (isStatusPage) {
-      expandItem(root.querySelector('#info'), true)
+      const info = root.querySelector('#info')
+      fetchStatus({ root: info, el: info, isStatusPage: true })
       return
     }
 
-    root.querySelectorAll('.message li').forEach(el => expandItem(el))
+    root.querySelectorAll('.message li').forEach(el => fetchStatus({ root: el, el }))
     return
   }
 
   if (root.nodeName === 'LI') {
-    expandItem(root)
+    fetchStatus({ root, el: root, isStatusPage })
   }
 }
 
-async function expandItem(el: Element | null, isStatusPage = false) {
-  if (!el)
+const MAX_FETCH_COUNT = 3
+
+interface FetchStatusOptions {
+  root: Element | null
+  el: Element | null
+  isStatusPage?: boolean
+  fetchCount?: number
+}
+
+async function fetchStatus({ root, el, isStatusPage = false, fetchCount = 0 }: FetchStatusOptions) {
+  if (!root || !el)
     return
 
   if (isStatusPage) {
@@ -29,74 +39,140 @@ async function expandItem(el: Element | null, isStatusPage = false) {
   }
 
   // 消息内容是否为 "抱歉**此条饭否已不可见"
-  const message = el.querySelector('.content')?.textContent?.trim() ?? ''
-  const isMsgInvisible = !!message.match(/抱歉.+此条饭否已不可见/)
+  const messageText = el.querySelector('.content')?.textContent?.trim() ?? ''
+  const isMsgInvisible = messageText === '原贴已被删除' || !!messageText.match(/^抱歉.+此条饭否已不可见$/)
 
-  console.log('expandItem', el)
-  const anchor = (isMsgInvisible ? el.querySelector('.stamp a') : el.querySelector('.reply a')) as HTMLAnchorElement | null
-  if (!anchor)
+  console.log(messageText)
+  const replyAnchor = (isMsgInvisible ? el.querySelector('.stamp a') : el.querySelector('.reply a')) as HTMLAnchorElement | null
+  if (!replyAnchor)
     return
 
-  if (anchor.dataset.expanded === 'true')
+  if (replyAnchor.dataset.expanded === 'true')
     return
-  anchor.dataset.expanded = 'true'
+
+  replyAnchor.dataset.expanded = 'true'
 
   try {
-    const response = await fetch(anchor.href)
+    const response = await fetch(replyAnchor.href)
     if (!response.ok) {
-      // todo: 显示错误信息, 一般是 404
+      // 一般是 404
+      replyAnchor.style.textDecoration = 'line-through'
+      root.querySelector('.ff-expand')?.remove()
       throw new Error(`Response status: ${response.status}`)
     }
-
-    // const u = new URL(anchor.href)
-    // const mId = u.pathname.split('/').pop()
 
     const html = await response.text()
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const reply = doc.getElementById('topbox')
-    if (reply) {
-      console.log(reply)
 
-      const info = extraMsg(reply)
-      console.log(info)
+    // 移除 “展开” 按钮
+    root.querySelector('.ff-expand')?.remove()
 
-      // prefixIds(reply, `${mId}-`)
+    if (!reply)
+      return
 
-      const replyDiv = document.createElement('div')
-      replyDiv.className = `${PREFIX}reply`
+    // console.log(fetchCount, reply)
+    const info = extraMsg(reply)
+    const { user, repostUser, message } = info
 
-      // 时间戳 - 头像 - 用户名 - 消息内容 - 发送方法
-      const { user, repostUser } = info
-      replyDiv.innerHTML = `
-        <div class="${PREFIX}reply-timestamp">
-          <a href="${anchor.href}" target="_blank">${info.timestamp}</a>
+    // eg. 如果是 "我只向关注我的人公开我的消息" 这种情况，返回的 message 为空
+    if (!message) {
+      replyAnchor.style.textDecoration = 'line-through'
+      return
+    }
+
+    let replyList = root.querySelector('.ff-reply-list')
+    if (!replyList) {
+      replyList = document.createElement('div')
+      replyList.classList.add('ff-reply-list')
+
+      // 无头像
+      if (!root.querySelector('.avatar')) {
+        replyList.classList.add('ff-reply-no-avatar')
+      }
+
+      root.appendChild(replyList)
+    }
+
+    const replyItem = document.createElement('div')
+    replyItem.classList.add('ff-reply')
+
+    // 标题: 头像 - 用户名 - 时间 - 发送方法
+    // 内容: 消息正文 + 图片
+    replyItem.innerHTML = `
+        <div class="ff-reply-title">
+          <a class="ff-reply-avatar" href="${user.link}" target="_blank"><img src="${user.avatar}" alt="${user.username}" /></a>
+          <a class="ff-reply-username" href="${user.link}" target="_blank">${user.username}</a>
+          <span>·</span>
+          <a class="ff-reply-timestamp" href="${replyAnchor.href}" target="_blank" title="${info.timestamp}">${info.timestampText}</a>
+          <div class="ff-reply-method">
+            <span>通过</span>
+            <a href="${info.methodLink}" target="_blank">${info.methodName}</a>
+          </div>
         </div>
-        <div class="${PREFIX}reply-body">
-          <div class="${PREFIX}reply-avatar">
-            <a href="${user.link}" target="_blank"><img src="${user.avatar}" alt="${user.username}" /></a>
-          </div>
-          <div class="${PREFIX}reply-content">
-            <a class="${PREFIX}reply-username" href="${user.link}" target="_blank">${user.username}</a>
-            <span class="${PREFIX}reply-message">${info.message}</span>
-            <span class="${PREFIX}reply-method">通过
-              <a href="${info.methodLink}" target="_blank">${info.methodName}</a>
-            </span>
-          </div>
+        <div class="ff-reply-body">
+          <div class="ff-reply-content">${message}</div>
         </div>
       `
 
-      // todo: 图片
-
-      if (repostUser) {
-        replyDiv.innerHTML = replyDiv.innerHTML.replace(repostUser.username, `<a href="${repostUser.link}" target="_blank">${repostUser.username}</a>`)
-      }
-
-      console.log('replyContainer', replyDiv)
-      el.after(replyDiv)
+    // 存在图片
+    const hasPhoto = !!info.image
+    if (hasPhoto) {
+      const imgContainer = document.createElement('a')
+      imgContainer.href = info.image.split('@')[0] // 使用原图: 去掉链接后面的 @ 等参数
+      imgContainer.classList.add('photo', 'zoom')
+      imgContainer.innerHTML = `
+        <img src="${info.image}" />
+        <span></span>
+      `
+      replyItem.querySelector(`.ff-reply-body`)?.appendChild(imgContainer)
     }
+
+    const contentDiv = replyItem.querySelector(`.ff-reply-content`)!
+    if (message.includes(`@${user.username}`)) {
+      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(user.username, makeUserLink(user))
+    }
+
+    if (repostUser && message.includes(`@${repostUser.username}`)) {
+      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(repostUser.username, makeUserLink(repostUser))
+    }
+
+    const hasMore = !!reply.querySelector<HTMLAnchorElement>('.reply a')
+    if (hasMore) {
+      // 增加一个 "展开" 的 a 标签, 点击后继续展开
+      const expandDiv = document.createElement('div')
+      expandDiv.classList.add('ff-expand')
+
+      expandDiv.innerHTML = `
+        <a href="javascript:void(0)">继续展开↓</a>
+      `
+      expandDiv.addEventListener('click', async () => {
+        await fetchStatus({ root, el: reply, isStatusPage, fetchCount: 0 }) // 重置 fetchCount
+        expandDiv.remove()
+      })
+      replyItem.querySelector(`.ff-reply-body`)?.after(expandDiv)
+    }
+
+    replyList.appendChild(replyItem)
+
+    if (hasPhoto) {
+      // @ts-expect-error 官网的点击图片放大功能
+      window.FF.app.Zoom.init(replyItem)
+    }
+
+    if (!hasMore)
+      return
+
+    // 防止无限递归
+    if (fetchCount >= MAX_FETCH_COUNT - 1) {
+      return
+    }
+
+    // 递归展开回复
+    await fetchStatus({ root, el: reply, isStatusPage, fetchCount: fetchCount + 1 })
   }
   catch (error) {
-    console.error((error as Error).message, anchor)
+    console.error((error as Error).message, replyAnchor)
   }
 }
 
@@ -135,22 +211,18 @@ function extraMsg(doc: Element) {
   // 4. 提取时间戳
   const timeAnchor = doc.querySelector<HTMLAnchorElement>('#latest a.time')
   const timestamp = timeAnchor?.getAttribute('title') ?? ''
+  const timestampText = timeAnchor?.textContent?.trim() ?? ''
 
   // 5. 提取发送方法
-  const methodAnchor = doc.querySelector<HTMLAnchorElement>('#latest .method')
-  const methodName = methodAnchor?.textContent?.trim() ?? ''
+  const methodAnchor = doc.querySelector<HTMLAnchorElement>('#latest .method a')
+  const methodName = methodAnchor?.textContent?.trim()?.replace('通过', '') ?? ''
   const methodLink = methodAnchor?.getAttribute('href') ?? ''
 
-  return { user, message, image, repostUser, timestamp, methodName, methodLink }
+  return { user, message, image, repostUser, timestamp, timestampText, methodName, methodLink }
 }
 
-function prefixIds(el: Element, prefix: string) {
-  [el, ...Array.from(el.querySelectorAll('[id]'))].forEach((el) => {
-    if (!el.id.startsWith(prefix)) {
-      el.classList.add(`${PREFIX}${el.id}`)
-      el.id = prefix + el.id
-    }
-  })
+function makeUserLink(user: User) {
+  return `<a href="${user.link}" target="_blank">${user.username}</a>`
 }
 
 export function expandReply() {

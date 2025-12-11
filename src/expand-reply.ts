@@ -154,10 +154,12 @@ async function fetchStatus({ root, el, isStatusPage = false, fetchCount = 0 }: F
     }
 
     replyList.appendChild(replyItem)
-
     if (hasPhoto) {
-      // @ts-expect-error 官网的点击图片放大功能
-      window.FF.app.Zoom.init(replyItem)
+      // window.FF.app.Zoom.init(replyItem)
+      setTimeout(() => {
+        // @ts-expect-error 官网的点击图片放大功能
+        window.FF.app.Zoom.init(replyItem)
+      }, 1000)
     }
 
     if (!hasMore)

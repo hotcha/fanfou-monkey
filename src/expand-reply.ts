@@ -2,6 +2,8 @@
 // https://fanfou.com/statuses/v4SCgZO8QyI
 // https://fanfou.com/%E7%88%B1%E8%87%AA
 
+import { unsafeWindow } from '$'
+
 function expand(root: Element, isStatusPage = false) {
   if (root.nodeName === 'BODY') {
     if (isStatusPage) {
@@ -155,11 +157,8 @@ async function fetchStatus({ root, el, isStatusPage = false, fetchCount = 0 }: F
 
     replyList.appendChild(replyItem)
     if (hasPhoto) {
-      // window.FF.app.Zoom.init(replyItem)
-      setTimeout(() => {
-        // @ts-expect-error 官网的点击图片放大功能
-        window.FF.app.Zoom.init(replyItem)
-      }, 1000)
+      // @ts-expect-error 官网的点击图片放大功能
+      unsafeWindow.FF?.app?.Zoom?.init(replyItem)
     }
 
     if (!hasMore)

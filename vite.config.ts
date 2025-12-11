@@ -11,6 +11,7 @@ export default defineConfig({
         icon: 'https://static.fanfou.com/favicon.ico',
         namespace: 'npm/vite-plugin-monkey',
         match: ['https://fanfou.com/*'],
+        grant: ['unsafeWindow'],
       },
     }),
   ],

@@ -37,7 +37,5 @@ function onScroll() {
 }
 
 export function setupAutoLoad() {
-  if (window.location.pathname === '/home') {
-    window.addEventListener('scroll', onScroll, { passive: true })
-  }
+  window.addEventListener('scroll', onScroll, { passive: true })
 }

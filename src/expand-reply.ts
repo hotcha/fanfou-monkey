@@ -228,12 +228,13 @@ function makeUserLink(user: User) {
 
 export function expandReply() {
   const isStatusPage = location.pathname.startsWith('/statuses/')
-  const isHomePage = location.pathname === '/home'
+  const { pathname } = location
+  const hasMore = pathname === '/home' || pathname.startsWith('/q/')
 
   expand(document.body, isStatusPage)
 
   // 监听后续动态加载（瀑布流）
-  if (isHomePage) {
+  if (hasMore) {
     const obs = new MutationObserver((muts) => {
       muts.forEach(m => m.addedNodes.forEach((n) => {
         if (n.nodeType === Node.ELEMENT_NODE)

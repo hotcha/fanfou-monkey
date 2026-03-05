@@ -3,6 +3,9 @@ const OFFSET = 200 // 距离底部多少 px 时触发
 let ticking = false // 防止一次滚动多次触发
 
 function clickMore() {
+  if (location.pathname === '/browse')
+    return
+
   const btn = document.querySelector(MORE_ID) as HTMLButtonElement | null
   if (!btn)
     return

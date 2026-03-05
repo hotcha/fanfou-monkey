@@ -1,11 +1,13 @@
 import { setupAutoLoad } from './auto-load'
-import { expandReply } from './expand-reply'
 import { expandUserInfo } from './expand-user-info'
+import { messageEnhance } from './message-enhance'
+import { setupPasteUpload } from './paste-upload'
 
 function start() {
   setupAutoLoad()
   expandUserInfo()
-  expandReply()
+  messageEnhance()
+  setupPasteUpload()
 }
 
 start()

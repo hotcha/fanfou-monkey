@@ -132,11 +132,11 @@ async function fetchStatus({ root, el, isStatusPage = false, fetchCount = 0 }: F
 
     const contentDiv = replyItem.querySelector(`.ff-reply-content`)!
     if (message.includes(`@${user.username}`)) {
-      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(user.username, makeUserLink(user))
+      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(user.username, newUserLink(user))
     }
 
     if (repostUser && message.includes(`@${repostUser.username}`)) {
-      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(repostUser.username, makeUserLink(repostUser))
+      contentDiv.innerHTML = contentDiv.innerHTML.replaceAll(repostUser.username, newUserLink(repostUser))
     }
 
     const hasMore = !!reply.querySelector<HTMLAnchorElement>('.reply a')
@@ -222,14 +222,35 @@ function extraMsg(doc: Element) {
   return { user, message, image, repostUser, timestamp, timestampText, methodName, methodLink }
 }
 
-function makeUserLink(user: User) {
+function newUserLink(user: User) {
   return `<a href="${user.link}" target="_blank">${user.username}</a>`
 }
 
-export function expandReply() {
+function statusEnhance() {
+  const userInfo = document.querySelector<HTMLAnchorElement>('#avatar a')
+  if (!userInfo)
+    return
+
+  userInfo.classList.add('avatar')
+  document.querySelectorAll<HTMLUListElement>('.message li').forEach((li) => {
+    const author = document.createElement('a')
+    author.href = location.pathname
+    author.textContent = userInfo.title.trim() ?? ''
+    author.className = 'author'
+
+    li.insertBefore(author, li.firstChild)
+    li.insertBefore(userInfo.cloneNode(true), li.firstChild)
+  })
+}
+
+export function messageEnhance() {
   const isStatusPage = location.pathname.startsWith('/statuses/')
   const { pathname } = location
   const hasMore = pathname === '/home' || pathname.startsWith('/q/')
+
+  if (statusEnhance) {
+    statusEnhance()
+  }
 
   expand(document.body, isStatusPage)
 

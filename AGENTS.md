@@ -28,6 +28,7 @@
 │   ├── expand-user-info.ts  # 自动展开用户信息
 │   ├── message-enhance.ts   # 消息增强（核心功能）
 │   ├── settings.ts          # 设置菜单（待实现）
+│   ├── style.css            # 页面自定义样式（从 Stylus 扩展迁移，构建时注入页面）
 │   └── vite-env.d.ts        # Vite 类型声明
 ├── dist/                    # 构建输出目录
 │   └── fanfou-monkey.user.js  # 生成的 userscript 文件
@@ -112,6 +113,10 @@ pnpm lint:fix
    - 消息不可见时（被删除或权限限制），同样添加删除线
 
 ### 样式类名约定
+
+所有自定义样式集中在 `src/style.css`（由 `main.ts` 导入，构建时注入页面；迁移自 Stylus 扩展）。修改样式请直接编辑该文件，不再依赖 Stylus。
+
+注意：`.message li` 的规则必须写成 `.message li:not(.msg)` —— `/statuses/*` 页面「消息上下文」的 `ol.replymsg li.msg` 使用原生布局，误匹配会导致内容与作者/操作按钮重叠。
 
 项目使用 `ff-` 前缀的自定义 CSS 类名：
 - `.ff-reply-list` - 回复列表容器

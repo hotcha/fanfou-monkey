@@ -1,0 +1,439 @@
+/* 自定义页面样式（迁移自 Stylus 扩展，统一管理于此）
+   注意：.message li 规则需排除 .msg（/statuses/ 页面「消息上下文」的 li.msg 使用原生布局） */
+
+/* 杂七杂八 */
+#reminder,
+#goodapp,
+.sect,
+#searchr {
+    display: none;
+}
+
+#sidebar .stabs {
+    margin-left: -16px;
+}
+
+#navtabs a {
+    -webkit-border-radius: 0;
+}
+
+#userview_link .test_feature::after {
+    display: none;
+}
+
+#user_infos a[title="点击收起"] {
+    display: none !important;
+}
+
+.global-header-content {
+    width: 90px;
+}
+
+.message li:not(.msg) {
+    /* 1. 定义默认照片间距（无回复列表时） */
+    --photo-mb: 0px;
+
+    /* 2. 迂回逻辑：满足条件时切换变量值 */
+    &:has(.photo):has(.ff-reply-list) {
+        --photo-mb: .5rem;
+    }
+
+    /* 3. 子元素直接引用变量 */
+    & .photo {
+        display: block;
+        /* 确保 margin 生效 */
+        margin-bottom: var(--photo-mb);
+        margin-right: 4px;
+        transition: margin-bottom 0.2s ease;
+    }
+
+    /* 自动展开回复列表容器 */
+    .avatar ~ .ff-reply-list {
+        margin-inline-start: 55px;
+    }
+
+    .ff-reply-list {
+        --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --radius: .8rem;
+        --gray-text: #999;
+        --photo-mb: 2px;
+
+        & .photo {
+            margin-bottom: var(--photo-mb);
+        }
+
+        margin-top: 4px;
+        margin-inline-start: 20px;
+        margin-inline-end: 4px;
+
+        /* stretch 是正确的, 忽略警告 */
+        width: stretch;
+
+        font-size: 15px !important;
+        border: solid 1px #ddd;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-xs);
+        clear: both;
+        order: 10;
+        line-height: 20px;
+
+        /* 回复单条项目 */
+        & .ff-reply {
+            padding: .5rem;
+            clear: both;
+            background: rgba(0, 0, 0, .02);
+            transition: background 0.2s;
+
+            &:hover {
+                background: rgba(0, 0, 0, .05);
+            }
+
+            &:not(:first-child) {
+                padding-top: .8rem;
+            }
+
+            /* 圆角处理：利用 first/last-child 配合变量 */
+            &:first-child {
+                border-radius: var(--radius) var(--radius) 0 0;
+            }
+
+            &:last-child {
+                border-radius: 0 0 var(--radius) var(--radius);
+            }
+
+            /* 只有不是最后一条时才有下边框 */
+            &:not(:last-child) {
+                border-bottom: dashed 1px #ddd;
+            }
+
+            /* 内部链接通用 */
+            & a {
+                text-decoration: none;
+            }
+
+            /* 头部区域 */
+            & .ff-reply-title {
+                display: flex;
+                align-items: center;
+                gap: .25rem;
+            }
+
+            /* 内容与元数据区域 */
+            & .ff-reply-body {
+                display: flex;
+                justify-content: space-between;
+                padding-top: .25rem;
+            }
+
+            /* 头像逻辑 */
+            & .ff-reply-avatar {
+                &:hover {
+                    background: unset;
+                    & img {
+                        filter: brightness(1.1);
+                    }
+                }
+
+                & img {
+                    width: 1.6rem;
+                    height: 1.6rem;
+                    border-radius: 1e5px;
+                }
+            }
+
+            /* 时间戳与发送方式 */
+            & :is(.ff-reply-timestamp, .ff-reply-method, .ff-reply-method a) {
+                font-size: 12px !important;
+                color: var(--gray-text);
+            }
+
+            & .ff-reply-method {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+            }
+        }
+
+        /* 无头像时的特殊偏移 */
+        & .ff-reply-no-avatar {
+            margin-left: 2rem;
+        }
+    }
+
+    /* 展开按钮样式 */
+    .ff-expand {
+        margin-top: 1rem;
+    }
+}
+
+/* 统一管理帖子列表样式 */
+.message li:not(.msg) {
+    /* 1. 默认变量定义（无头像时的状态） */
+    --ml: 0px;
+    --stamp-prefix: "";
+    --author-max-w: 100%;
+
+    width: 100% !important;
+    padding: 10px 4px 12px 4px !important;
+    line-height: 20px;
+    box-sizing: border-box;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 2px;
+
+    /* 2. 嵌套：当存在头像时的变量覆盖与特殊逻辑 */
+    &:has(.avatar) {
+        --ml: 55px;
+        --stamp-prefix: "· ";
+        --author-max-w: 170px;
+
+        display: flex;
+
+        & .avatar {
+            margin: 0 4px 0 0 !important;
+
+            &:hover {
+                background: unset;
+                & img {
+                    filter: brightness(1.1);
+                }
+            }
+
+            & img {
+                border-radius: 1e5px;
+                /* 代替 calc(infinity * 1px) 的更稳妥写法 */
+            }
+        }
+
+        & .stamp {
+            max-width: 250px;
+        }
+
+        & .op {
+            top: 6px !important;
+            bottom: auto !important;
+            /* 新增：防止 .op 被拉伸到整条消息高度 */
+        }
+    }
+
+
+    /* 3. 嵌套逻辑：存在 (回复列表或照片) 且 内部不含 .avatar */
+    &:has(:is(.ff-reply-list, .photo)):not(:has(.avatar)) {
+        padding-bottom: 28px !important;
+    }
+
+
+
+    /* 4. 嵌套：子元素通用样式 */
+    & .author,
+    & .stamp {
+        order: 2;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    & .author {
+        max-width: var(--author-max-w);
+        margin-right: 0 !important;
+    }
+
+    & .stamp {
+        margin-top: 0;
+
+        &::before {
+            content: var(--stamp-prefix);
+        }
+
+        & .method {
+            margin-left: 0;
+        }
+    }
+
+    & .content {
+        order: 4;
+        width: 100%;
+        text-align: left;
+        font-size: 15px !important;
+        margin-top: -1.75rem;
+        margin-left: var(--ml);
+        /* 关键：有无头像由变量决定 */
+    }
+
+    & .op {
+        display: flex !important;
+        top: unset !important;
+        bottom: 6px !important;
+        gap: .5rem;
+        order: 1;
+    }
+}
+
+/* 独立样式：message2 逻辑 */
+.message2 li .op a {
+    visibility: visible !important;
+}
+
+/* 全局：禁用中文与西文之间的自动间距 */
+html {
+    text-autospace: normal;
+}
+
+/* 首页 */
+#timeline-notification a {
+    background: #FDF2F8;
+    border-color: #FBCFE8;
+    color: #9D174D;
+    border-radius: 0;
+    transition: all 0.25s ease;
+
+    &:hover {
+        background: #FCE7F3;
+        border-color: #F9A8D4;
+        color: #9D174D;
+    }
+}
+
+
+#pagination-totop {
+    display: none;
+}
+
+#pagination-more {
+    width: 100%;
+    border-width: 0.5px;
+    border-color: #ddd;
+    border-radius: 9999px;
+}
+
+/* 输入框区域 */
+#phupdate {
+    width: unset !important;
+
+    .slogan {
+        font-size: 14px;
+        font-weight: bold;
+        color: #5b7083;
+        margin: 2px 0 6px 2px;
+    }
+
+    .textarea-wrapper {
+        width: unset !important;
+        /* 保持你要求的覆盖 */
+        box-sizing: border-box;
+        border: 1px solid #cfd9de;
+        border-radius: 2px;
+        background: #fff;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        padding: 2px;
+
+        /* 内部 textarea 逻辑 */
+        textarea {
+            width: calc(100% - 6px) !important;
+        }
+
+        textarea.qs {
+            width: 100% !important;
+            box-sizing: border-box;
+            border: none !important;
+            outline: none !important;
+            padding: 8px 10px;
+            min-height: 40px;
+            overflow-y: auto;
+            resize: none;
+            font-size: 15px;
+            line-height: 1.5;
+            display: block;
+            background-color: #fff;
+            transition: border-color 0.2s;
+
+            &:focus {
+                border-color: #1d9bf0 !important;
+                outline: none;
+            }
+        }
+
+        /* 容器聚焦状态 */
+        &:focus-within {
+            border-color: #1d9bf0;
+            box-shadow: 0 0 0 1px #1d9bf0;
+        }
+    }
+
+    /* 按钮与计数 */
+    .formbutton {
+        background: #1d9bf0 !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 6px 20px;
+        color: #ffffff !important;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1.2;
+        letter-spacing: 2px;
+        text-indent: 2px;
+        border: none;
+        border-radius: 99px;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+            background: #1a8cd8 !important;
+        }
+    }
+
+    /* 剩余可输入字数提示 */
+    .tip {
+        top: 116px;
+        right: 86px;
+    }
+}
+
+/* 上传图片容器 */
+.upload-button-wrapper {
+    display: flex;
+    gap: 2px;
+}
+
+/* 取消上传图片按钮 */
+.upload-close-handle {
+    padding-top: 0;
+}
+
+/* 地理位置容器 */
+.location-button-wrapper {
+    display: none;
+}
+
+/* 系统提示 */
+.sysnotice {
+    background: #f0f7ff;
+    border: 1px solid #d1e9ff;
+    color: #1d4ed8;
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+
+    a {
+        color: #2563eb;
+        /* 稍微亮一点的现代蓝 */
+        text-decoration: none;
+        border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+        /* 用边框模拟下划线，更优雅 */
+        &:hover {
+            color: #1d4ed8;
+            border-bottom-color: #1d4ed8;
+        }
+    }
+}
+
+.sysnotice ~ #phupdate .slogan {
+    margin-top: 18px;
+}
+
+.web-upload-photo-file-name {
+    left: unset;
+}
